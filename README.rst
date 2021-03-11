@@ -12,6 +12,7 @@ Contributors
 - M.Koesters
 - C.Fufezan
 
+
 Installation from  source
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -29,7 +30,6 @@ Installation from  source
 3. Finally, use setup.py to install chemical-composition into the Python site-packages::
 
     user@localhost:~/ursgal$ python setup.py install
-
 
 (You might need administrator privileges to write in the Python site-package folder.
 On Linux or OS X, use ```sudo python setup.py install``` or write into a user folder
