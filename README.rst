@@ -7,19 +7,19 @@ Originally, the ChemicalComposition was part of different Python packages from t
 Contributors
 ------------
 
-- J. Leufken
-- S. Schulze
-- M. Koesters
-- C. Fufezan
+- J.Leufken
+- S.Schulze
+- M.Koesters
+- C.Fufezan
 
 Installation from  source
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Download chemical-composition using `GitHub`_ **or** the zip file:
 
-  GitHub version: Starting from your command line, the easiest way is to clone the GitHub repo.::
+    GitHub version: Starting from your command line, the easiest way is to clone the GitHub repo.::
 
-   user@localhost:~$ git clone git@github.com:computational-ms/chemical-composition.git
+    user@localhost:~$ git clone git@github.com:computational-ms/chemical-composition.git
 
 2. Next, navigate into the Ursgal folder and install the requirements::
 
