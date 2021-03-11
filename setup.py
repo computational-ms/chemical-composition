@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+
 from setuptools import setup
 import os
+
 
 # We store our version number in a simple text file:
 version_path = os.path.join(

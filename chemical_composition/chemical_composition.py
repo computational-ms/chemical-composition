@@ -5,13 +5,13 @@
     :licence: MIT, see LISCENSE for more details
 """
 
-from __future__ import absolute_import
 import sys
 import re
 from collections import defaultdict as ddict
 import copy
+
+from unimod_mapper import UnimodMapper
 from chemical_composition import chemical_composition_kb
-import unimod_mapper
 
 
 class ChemicalComposition(dict):
@@ -38,7 +38,7 @@ class ChemicalComposition(dict):
               ]
 
     Examples::
-        >>> c = ursgal.ChemicalComposition()
+        >>> c = ChemicalComposition()
         >>> c.use("ELVISLIVES#Acetyl:1")
         >>> c.hill_notation()
         'C52H90N10O18'
@@ -53,13 +53,12 @@ class ChemicalComposition(dict):
         >>> c.composition_at_pos[1]
         defaultdict(<class 'int'>, {'O': 4, 'H': 9, 'C': 7, 'N': 1})
 
-        >>> c = ursgal.ChemicalComposition('H2O2H2')
+        >>> c = chemical_composition.ChemicalComposition('H2O2H2')
         >>> c
         {'O': 2, 'H': 4}
         >>> c.subtract_chemical_formula('H3')
         >>> c
         {'O': 2, 'H': 1}
-
     """
 
     def __init__(
@@ -528,7 +527,7 @@ class ChemicalComposition(dict):
                 ), """
                 The given element {0}
                 is not included yet. Please add it to the isotopic_distributions
-                dictionary in ursgal/chemical_composition_kb.py.
+                dictionary in chemical_composition/chemical_composition_kb.py.
                 Isotopic masses and distributions can be found at
                 http://ciaaw.org/atomic-masses.html
                 """.format(

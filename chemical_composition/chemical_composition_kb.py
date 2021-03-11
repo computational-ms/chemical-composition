@@ -15,6 +15,7 @@ http://www.ciaaw.org/pubs/TICE2009.pdf
 # updated 03-2021
 PROTON = 1.007276466621
 
+
 isotopic_distributions = {
     # Isotopic masses verified using
     # http://ciaaw.org/atomic-masses.htm
