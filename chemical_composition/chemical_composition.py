@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+    :copyright: (c) 2021 by C. Fufezan, M.Koesters, J. Leufken, S. Schulze
+    :licence: MIT, see LISCENSE for more details
+"""
+
 import sys
 import re
 from collections import defaultdict as ddict
@@ -9,22 +16,20 @@ from chemical_composition import chemical_composition_kb
 
 class ChemicalComposition(dict):
     """
-    Chemical composition class. The actual sequence or formula can be reset
-    using the `add` function.
+    Chemical composition class.
 
     Keyword Arguments:
-        sequence (str): Peptide or chemical formula sequence
+        sequence (Optional[str]): Peptide or chemical formula sequence
         aa_compositions (Optional[dict]): amino acid compositions
         isotopic_distributions (Optional[dict]): isotopic distributions
+        monosaccharide_compositions (Optional[dict]): compositions of monosaccharides (as Hill notation)
 
     Keyword argument examples:
 
         **sequence** - Currently this can for example be::
               [
-              '+H2O2H2-OH',
-              '+{0}'.format('H2O'),
+              'H2O',
               '{peptide}'.format(pepitde='ELVISLIVES'),
-              '{peptide}+{0}'.format('PO3', peptide='ELVISLIVES'),
               '{peptide}#{unimod}:{pos}'.format(
               peptide = 'ELVISLIVES',
               unimod = 'Oxidation',
@@ -48,17 +53,12 @@ class ChemicalComposition(dict):
         >>> c.composition_at_pos[1]
         defaultdict(<class 'int'>, {'O': 4, 'H': 9, 'C': 7, 'N': 1})
 
-        >>> c = chemical_composition.ChemicalComposition('+H2O2H2')
+        >>> c = chemical_composition.ChemicalComposition('H2O2H2')
         >>> c
         {'O': 2, 'H': 4}
         >>> c.subtract_chemical_formula('H3')
         >>> c
         {'O': 2, 'H': 1}
-
-    Note:
-        We did not include mass calculation, since pyQms will calculate masses
-        much more accurately using unimod and other element enrichments.
-
     """
 
     def __init__(
@@ -131,13 +131,19 @@ class ChemicalComposition(dict):
                 self.isotope_mass_lookup[isotope_mass_key] = isotope_mass
 
     def __add__(self, other_cc):
-        """Experimental"""
+        """
+        Add chemical composition (dict) to the class
+
+        Arguments:
+            other_cc (dict): dictionary containing the number of atoms of each element that will be added
+        """
         tmp = copy.deepcopy(self)
         for other_key, other_value in other_cc.items():
             tmp[other_key] += other_value
         return tmp
 
     def __missing__(self, key):
+        """Set missing elements to 0"""
         if key not in self.keys():
             self[key] = 0
         return self[key]
@@ -159,36 +165,20 @@ class ChemicalComposition(dict):
         for k in list(self.keys()):
             del self[k]
 
-    def _parse_sequence_old_style(self, sequence):
-        positions = [len(sequence)]
-        for sign in ["+", "-"]:
-            if sign in sequence:
-                positions.append(sequence.index(sign))
-        minPos = min(positions)
-        peptide = sequence[:minPos]
-        addon = sequence[minPos:]
-        self.peptide = peptide
-        self.addon = addon
-        if peptide != "":
-            self.add_peptide(peptide)
-            self["O"] += 1
-            self["H"] += 2
-
-        chemical_formula_blocks = re.compile(
-            r"""
-                        [+|-]{1}
-                        [^-+]*
-                        """,
-            re.VERBOSE,
-        ).findall(addon)
-        for cb in chemical_formula_blocks:
-            if cb[0] == "+":
-                self.add_chemical_formula(cb[1:])
-            else:
-                self.subtract_chemical_formula(cb[1:])
-        return
-
     def _parse_sequence_unimod_style(self, sequence):
+        """
+        Parse a sequence of the format "<PEPTIDE>#<unimod>:<pos>"
+        with unimod referrig to any unimod PSI-MS name and
+        pos referring to the position of the modification within the peptide sequence.
+        Modifications of peptide side chains start at position 1,
+        while position 0 refers to the N-terminus and position len(peptide)+1 refers
+        to the C-terminus.
+
+        Args:
+            sequence(str): sequence in unimod style
+        """
+        if self._unimod_parser is None:
+            self._unimod_parser = unimod_mapper.UnimodMapper()
         minPos = sequence.index("#")
         peptide = sequence[:minPos]
         addon = sequence[minPos + 1 :]
@@ -199,7 +189,6 @@ class ChemicalComposition(dict):
             self["H"] += 2
         self.addon = addon
         unimods = self.addon.split(";")
-        # pattern = self.regex_patterns[':pos']
         pattern = re.compile(r""":(?P<pos>[0-9]*$)""")
         for unimod in unimods:
             if unimod == "":
@@ -216,53 +205,35 @@ class ChemicalComposition(dict):
                 )
 
             for occ, match in enumerate(pattern.finditer(unimod)):
-                try:
-                    unimodcomposition = self._unimod_parser.name2composition(
-                        unimod[: match.start()]
-                    )
-                except:
+                unimodcomposition = self._unimod_parser.name2composition(
+                    unimod[: match.start()]
+                )
+                if unimodcomposition is None:
                     sys.exit(
                         """
                         Error in chemical_composition.py:
-                        Cannot map unimod {0}. extracted position argument {1}
+                        Cannot map unimod {0}
                         """.format(
-                            unimod, match.start()
+                            unimod[: match.start()]
                         )
                     )
-                # if occ >= 1:
+                if occ >= 1:
+                    sys.exit(
+                        """
+                        Error in chemical_composition.py:
+                        The unimod {0} contains multiple ":", preventing to map the position correctly
+                        """.format(
+                            unimod
+                        )
+                    )
                 position = int(match.group("pos"))
                 if position not in self.unimod_at_pos.keys():
                     self.unimod_at_pos[position] = []
                 self.unimod_at_pos[position].append(unimod[: match.start()])
-                # print('{0} <<- Two unimods at the same position ? '.format(
-                #     sequence
-                # ))
-                # raise Exception
 
-            # match = re.search( position_re_pattern, unimod)
-            # if match is not None:
-            #     end = match.start()
-            #     print( '>>>>', match)
-            # else:
-            #     end = len( unimod )
-            # try:
-            #     unimodcomposition = self._unimod_parser.name2composition(
-            #         unimod[:end ]
-            #     )
-            # except:
-            #     print(
-            #         'Unimod error:', unimod,'>>', unimod[:end],
-            #         re.search( position_re_pattern , unimod),
-            #         re.search( position_re_pattern , unimod).start()
-            #     )
-            #     exit(1)
-            # print( self , 'peptide only')
-            # print( 'Unimod:', unimod, unimod[:end] , )
-            # Full addition
-            # print( unimodcomposition , '<<<<<<')
             for k, v in unimodcomposition.items():
                 self[k] += v
-            # storage position related modifications
+            # Storing position related modifications
             position = int(match.group("pos"))
             if position == 0:
                 # E.g. Acetylation at pos 0 indicates N-Term
@@ -276,7 +247,6 @@ class ChemicalComposition(dict):
             for k, v in unimodcomposition.items():
                 self.composition_of_mod_at_pos[position][k] += v
                 self.composition_at_pos[position][k] += v
-
         return
 
     def use(self, sequence):
@@ -293,11 +263,14 @@ class ChemicalComposition(dict):
         # reset the shiznit
         if "#" in sequence:
             # Unimod Style format
-            if self._unimod_parser is None:
-                self._unimod_parser = UnimodMapper()
             self._parse_sequence_unimod_style(sequence)
+        elif bool(re.search(r"\d", sequence)):
+            self.add_chemical_formula(sequence)
         else:
-            self._parse_sequence_old_style(sequence)
+            self.add_amino_acids(sequence)
+            self["O"] += 1
+            self["H"] += 2
+        return
 
     def add_chemical_formula(self, chemical_formula, factor=1):
         """Adds chemical formula to the instance
@@ -312,9 +285,53 @@ class ChemicalComposition(dict):
         self._merge(chemical_formula, mode="addition", factor=factor)
         return
 
+    def add_amino_acids(self, aa_sequence):
+        """
+        Adds a sequence of amino acids to the instance
+
+        Args:
+            aa_sequence (str): string of amino acids (only standard amino acids and U allowed so far), e.g. "PEPTIDE"
+
+        Note:
+            In contrast to the previous function add_peptide, this function
+            does not allow for labeled amino acids to be added, please use unimods
+            for that purpose instead.
+        """
+        if self.peptide is None:
+            self.peptide = ""
+        for pos, aa in enumerate(aa_sequence):
+            aa_pos = len(self.peptide) + pos + 1
+            try:
+                aa_compo = self.aa_compositions[aa]
+            except:
+                sys.exit(
+                    """
+                    Error in chemical_composition.py:
+                    Do not know aa composition for {0}
+                    in {1}
+                    """.format(
+                        aa, aa_sequence
+                    )
+                )
+            self.add_chemical_formula(aa_compo)
+
+            composition = self._chemical_formula_to_dict(aa_compo)
+            self.composition_of_aa_at_pos[pos] = composition
+            if pos not in self.composition_at_pos.keys():
+                self.composition_at_pos[pos] = ddict(int)
+            for k, v in composition.items():
+                self.composition_at_pos[pos][k] += v
+        self.peptide += aa_sequence
+        return
+
     def add_peptide(self, peptide):
         """Adds peptide sequence to the instance"""
         # pattern = self.regex_patterns['aaN']
+        print(
+            """
+            [Warning] You are using the function "add_peptide", which has been replaced with "add_amino_acids"
+            """
+        )
         pattern = re.compile(r"""(?P<aa>[A-Z]{1})(?P<N>[0-9]*)""")
         # pattern = re.compile(r'[A-Z]{1}[0-9]*')
         number_offset = 0
@@ -362,32 +379,41 @@ class ChemicalComposition(dict):
                 count = 1
             else:
                 count = int(glyc_match.group("count").strip("(").strip(")"))
-            # try:
-            #     monosacch_compo = self._unimod_parser.name2composition(monosacch)
-            # except:
             if monosacch in self.monosaccharide_compositions.keys():
                 monosacch_compo = self.monosaccharide_compositions[monosacch]
             else:
                 sys.exit("Do not know glycan composition for {0}".format(monosacch))
             self.add_chemical_formula(monosacch_compo, factor=count)
+        return
 
     def _chemical_formula_to_dict(self, chemical_formula):
-        if isinstance(chemical_formula, ChemicalComposition):
-            chem_dict = chemical_formula
-        elif "(" in chemical_formula:
-            pattern = re.compile(r"(?P<element>[0-9]*[A-z]*)(?P<count>[(][0-9]*[)])")
+        """
+        Converts chemical formula into chemical composition dictionary
+        """
+        unimod_style = False
+        if "(" in chemical_formula:
+            unimod_style = True
+        chem_dict = {}
+        if unimod_style:
+            pattern = re.compile(
+                r"(?P<isotope>[0-9]*)(?P<element>[A-Z][a-z]*)\((?P<count>[0-9]*)\)"
+            )
         else:
             pattern = re.compile(r"(?P<element>[A-Z][a-z]*)(?P<count>[0-9]*)")
-        chem_dict = {}
-        # print( chemical_formula , type( chemical_formula ))
         for match in pattern.finditer(chemical_formula):
             if match.group("count") == "":
                 count = 1
             else:
-                count = int(match.group("count").strip("(").strip(")"))
-            if match.group("element") not in chem_dict.keys():
-                chem_dict[match.group("element")] = 0
-            chem_dict[match.group("element")] += count
+                count = int(match.group("count"))
+            if unimod_style:
+                element_key = "{0}{1}".format(
+                    match.group("isotope"), match.group("element")
+                )
+            else:
+                element_key = match.group("element")
+            if element_key not in chem_dict.keys():
+                chem_dict[element_key] = 0
+            chem_dict[element_key] += count
         return chem_dict
 
     def hill_notation(self, include_ones=False, cc=None):
@@ -397,8 +423,9 @@ class ChemicalComposition(dict):
         .. _Hill Notation:
             https://en.wikipedia.org/wiki/Hill_system
 
-        Args:
+        Keyword Arguments:
             cc (dict, optional): can format other element dicts as well.
+            include_ones (bool): Include "1" for elements with a count of 1 (otherwise the count will be omitted)
 
         Returns:
             str: Hill notation format of self.
@@ -428,7 +455,6 @@ class ChemicalComposition(dict):
                     s += str(cc_dict[k])
         return s
 
-    # def hill_notation(self, include_ones=False):
     def hill_notation_unimod(self, cc=None):
         """
         Formats chemical composition into `Hill notation`_ string
@@ -488,7 +514,12 @@ class ChemicalComposition(dict):
         for element, count in cc_mass_dict.items():
             isotope_mass = None
             try:
-                isotope_mass = self.isotopic_distributions[element][0][0]
+                isotope_mass = sorted(
+                    self.isotopic_distributions[element],
+                    key=lambda x: x[1],
+                    reverse=True,
+                )[0][0]
+                ##### add test with Li
             except:
                 # we check for 15N or 13C or other isotopes
                 assert (
@@ -508,7 +539,17 @@ class ChemicalComposition(dict):
         return mass
 
     def _merge(self, chemical_formula, mode="addition", factor=1):
-        """Generalized function that allows addition and subtraction"""
+        """
+        Generalized function that allows addition and subtraction
+        of chemical formulas to/from the instance
+
+        Args:
+            chemical_formula (str|dict): chemical formula that should be merged with the instance
+
+        Keyword Arguments:
+            mode (str): "addition" to add the defined chemical formula, "subtraction" to subtract it from the instance
+            factor (int): defines how often the chemical formula should be added/subtracted
+        """
         if mode == "addition":
             sign = +1
         elif mode == "subtraction":
@@ -524,15 +565,39 @@ class ChemicalComposition(dict):
             chemical_formula = self._chemical_formula_to_dict(chemical_formula)
         for element, count in chemical_formula.items():
             self[element] = self[element] + sign * count * factor
-        # else:
-        #     print(chemical_formula, type(chemical_formula))
-        #     sys.exit('Do not know the format of the chemical formula')
         return
 
-    def subtract_peptide(self, peptide):
-        """Subtract peptide from instance"""
-        for aa in peptide:
-            self.subtract_chemical_formula(self.aa_compositions[aa])
+    def subtract_amino_acids(self, aa_sequence):
+        """Subtract amino acid sequence from instance"""
+        for aa in aa_sequence:
+            try:
+                aa_compo = self.aa_compositions[aa]
+            except:
+                sys.exit(
+                    """
+                    Error in chemical_composition.py:
+                    Do not know aa composition for {0}
+                    in {1}
+                    """.format(
+                        aa, aa_sequence
+                    )
+                )
+            self.subtract_chemical_formula(aa_compo)
+
+        if self.peptide.endswith(aa_sequence):
+            self.peptide = "".join(self.peptide.split(aa_sequence)[:-1])
+            for pos, aa in enumerate(aa_sequence):
+                aa_pos = len(self.peptide) + pos + 1
+                del self.composition_of_aa_at_pos[pos]
+                del self.composition_at_pos[pos]
+        else:
+            print(
+                """
+                [WARNING] The subtracted amino acid sequence does not match the end of the stored peptide sequence.
+                The compositions at specific positions can therefore not be updated!
+                """
+            )
+        return
 
     def subtract_chemical_formula(self, chemical_formula, factor=1):
         """Subtract chemical formula from instance
@@ -548,6 +613,9 @@ class ChemicalComposition(dict):
         return
 
     def generate_cc_dict(self):
+        """
+        Generate a dictionary of the instance
+        """
         tmp = {}
         tmp.update(self)
         return tmp
