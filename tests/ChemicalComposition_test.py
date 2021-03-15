@@ -48,10 +48,10 @@ class TestChemicalComposition(unittest.TestCase):
         cc = chemical_composition.ChemicalComposition()
         failing_sequence_list = ["#Oxidation_w/o_pos", "#Oxidation_with_pos:1"]
         for failing_sequence in failing_sequence_list:
-            with self.assertRaises(SystemExit) as system_exit_check:
+            with self.assertRaises(Exception) as system_fail_check:
                 cc.add_modifications(failing_sequence)
-
-            assert len(system_exit_check.exception.code) != 0
+            print(system_fail_check.exception.args[:])
+            assert len(system_fail_check.exception.args[:]) != 0
         cc.clear()
         cc.add_modifications(";")
         assert len(cc.keys()) == 0
