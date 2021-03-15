@@ -9,8 +9,9 @@ import sys
 import re
 from collections import defaultdict as ddict
 import copy
+
+from unimod_mapper import UnimodMapper
 from chemical_composition import chemical_composition_kb
-import unimod_mapper
 
 
 class ChemicalComposition(dict):
@@ -49,7 +50,6 @@ class ChemicalComposition(dict):
         >>> c.subtract_chemical_formula('H2')
         >>> c
         {'O': 2, 'N': -2}
-
     """
 
     def __init__(
