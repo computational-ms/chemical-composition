@@ -1,1 +1,2 @@
-pytest
+nosetests
+git+git@github.com:computational-ms/unimod-mapper.git
