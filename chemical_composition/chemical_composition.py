@@ -212,7 +212,7 @@ class ChemicalComposition(dict):
                 or modifications is not None
                 or glycan is not None
             ):
-                sys.exit(
+                raise Exception(
                     """
                 [ERROR] You cannot use 'deprecated_format' 
                 [ERROR] in combination with 'sequence/formula/modifications/glycan'
@@ -276,7 +276,7 @@ class ChemicalComposition(dict):
                 continue
             unimod = unimod.strip()
             if ":" not in unimod:
-                sys.exit(
+                raise Exception(
                     """
                     Error in chemical_composition.py:
                     This unimod: {0} requires positional information
@@ -290,7 +290,7 @@ class ChemicalComposition(dict):
                     unimod[: match.start()]
                 )
                 if unimodcomposition is None:
-                    sys.exit(
+                    raise Exception(
                         """
                         Error in chemical_composition.py:
                         Cannot map unimod {0}
@@ -299,7 +299,7 @@ class ChemicalComposition(dict):
                         )
                     )
                 if occ >= 1:
-                    sys.exit(
+                    raise Exception(
                         """
                         Error in chemical_composition.py:
                         The unimod {0} contains multiple ":", preventing to map the position correctly
@@ -429,7 +429,7 @@ class ChemicalComposition(dict):
             try:
                 aa_compo = self.aa_compositions[aa]
             except:
-                sys.exit(
+                raise Exception(
                     """
                     Error in chemical_composition.py:
                     Do not know aa composition for {0}
@@ -471,7 +471,7 @@ class ChemicalComposition(dict):
             try:
                 aa_compo = self.aa_compositions[aa + N]
             except:
-                sys.exit(
+                raise Exception(
                     """
                     Error in chemical_composition.py:
                     Do not know aa composition for {0}
@@ -513,7 +513,9 @@ class ChemicalComposition(dict):
             if monosacch in self.monosaccharide_compositions.keys():
                 monosacch_compo = self.monosaccharide_compositions[monosacch]
             else:
-                sys.exit("Do not know glycan composition for {0}".format(monosacch))
+                raise Exception(
+                    "Do not know glycan composition for {0}".format(monosacch)
+                )
             self.add_chemical_formula(monosacch_compo, factor=count)
         return
 
@@ -538,7 +540,7 @@ class ChemicalComposition(dict):
                 continue
             unimod = unimod.strip()
             if ":" not in unimod:
-                sys.exit(
+                raise Exception(
                     """
                     Error in chemical_composition.py:
                     This unimod: {0} requires positional information
@@ -552,7 +554,7 @@ class ChemicalComposition(dict):
                     unimod[: match.start()]
                 )
                 if unimodcomposition is None:
-                    sys.exit(
+                    raise Exception(
                         """
                         Error in chemical_composition.py:
                         Cannot map unimod {0}
@@ -561,7 +563,7 @@ class ChemicalComposition(dict):
                         )
                     )
                 if occ >= 1:
-                    sys.exit(
+                    raise Exception(
                         """
                         Error in chemical_composition.py:
                         The unimod {0} contains multiple ":", preventing to map the position correctly
@@ -766,7 +768,7 @@ class ChemicalComposition(dict):
             sign = -1
             addon = "-"
         else:
-            sys.exit(
+            raise Exception(
                 """
                 Error in chemical_composition.py:
                 Do not know which mode to use for _merge
@@ -794,7 +796,7 @@ class ChemicalComposition(dict):
             try:
                 aa_compo = self.aa_compositions[aa]
             except:
-                sys.exit(
+                raise Exception(
                     """
                     Error in chemical_composition.py:
                     Do not know aa composition for {0}
