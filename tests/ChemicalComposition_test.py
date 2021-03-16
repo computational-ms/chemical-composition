@@ -15,7 +15,7 @@ class TestChemicalComposition(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def generate_cc_using_uni_mod_terminology_test(self):
+    def test_generate_cc_using_uni_mod_terminology_(self):
         cc_returned = self.water_unimod_style_chemical_formula.generate_cc_dict()
         assert len(cc_returned.keys()) == 2
         self.assertEqual(cc_returned["16O"], 1)
@@ -44,7 +44,7 @@ class TestChemicalComposition(unittest.TestCase):
         cc = chemical_composition.ChemicalComposition("#TMT6plex:0")
         self.assertAlmostEqual(cc._mass(cc=cc), 229.162932, 6)
 
-    def fail_test(self):
+    def test_fail(self):
         cc = chemical_composition.ChemicalComposition()
         failing_sequence_list = ["#Oxidation_w/o_pos", "#Oxidation_with_pos:1"]
         for failing_sequence in failing_sequence_list:
@@ -58,11 +58,23 @@ class TestChemicalComposition(unittest.TestCase):
 
         return
 
-    def generate_cc_test(self):
+    def test_generate_cc(self):
         cc = chemical_composition.ChemicalComposition("H2O")
         cc_returned = cc.generate_cc_dict()
         assert len(cc_returned.keys()) == 2
         return
+
+    def test_calculate_mz(self):
+        self.assertAlmostEqual(
+            self.water_unimod_style_chemical_formula.mz(charge=1),
+            19.01784,
+            4,
+        )
+        self.assertAlmostEqual(
+            self.water_unimod_style_chemical_formula.mz(charge=2),
+            10.01255,
+            4,
+        )
 
 
 TESTS = [

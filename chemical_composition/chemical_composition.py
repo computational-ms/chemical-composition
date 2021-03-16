@@ -178,7 +178,7 @@ class ChemicalComposition(dict):
             sequence(str): sequence in unimod style
         """
         if self._unimod_parser is None:
-            self._unimod_parser = unimod_mapper.UnimodMapper()
+            self._unimod_parser = UnimodMapper()
         minPos = sequence.index("#")
         peptide = sequence[:minPos]
         addon = sequence[minPos + 1 :]
@@ -537,6 +537,11 @@ class ChemicalComposition(dict):
             mass += count * isotope_mass
 
         return mass
+
+    def mz(self, charge):
+        mass = self._mass()
+        mz = (mass + (charge * chemical_composition_kb.PROTON)) / charge
+        return mz
 
     def _merge(self, chemical_formula, mode="addition", factor=1):
         """
