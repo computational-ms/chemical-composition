@@ -7,9 +7,9 @@ import unittest
 class TestChemicalComposition(unittest.TestCase):
     def setUp(self):
         self.lib = chemical_composition.ChemicalComposition()
-        self.water1 = chemical_composition.ChemicalComposition("H2O")
+        self.water1 = chemical_composition.ChemicalComposition(deprecated_format="+H2O")
         self.water_unimod_style_chemical_formula = (
-            chemical_composition.ChemicalComposition("H(2)16O(1)")
+            chemical_composition.ChemicalComposition(deprecated_format="+H(2)16O(1)")
         )
 
     def tearDown(self):
@@ -23,8 +23,8 @@ class TestChemicalComposition(unittest.TestCase):
         return
 
     def test_add_chemical_formulas(self):
-        water1 = chemical_composition.ChemicalComposition("H2O")
-        water2 = chemical_composition.ChemicalComposition("H2O")
+        water1 = chemical_composition.ChemicalComposition(deprecated_format="+H2O")
+        water2 = chemical_composition.ChemicalComposition(deprecated_format="+H2O")
         two_waters = water1 + water2
         self.assertEqual(two_waters.hill_notation(), "H4O2")
 
@@ -32,34 +32,34 @@ class TestChemicalComposition(unittest.TestCase):
     #     self.assertEqual(str(self.water1), "H2O")
 
     def test_clear_removes_everything(self):
-        cc = chemical_composition.ChemicalComposition("KLEINERTEST")
+        cc = chemical_composition.ChemicalComposition(sequence="KLEINERTEST")
         cc.clear()
         self.assertEqual(cc.hill_notation(), "")
 
-    def test__mass_even_though_you_should_not_use_it(self):
-        cc = chemical_composition.ChemicalComposition("H2O")
-        self.assertAlmostEqual(cc._mass(), 18.0105646844)
+    def test_mass_even_though_you_should_not_use_it(self):
+        cc = chemical_composition.ChemicalComposition(formula="H2O")
+        self.assertAlmostEqual(cc.mass(), 18.0105646844)
 
-    def test__mass_with_heavy_isotopes_TMT6Plex_example(self):
-        cc = chemical_composition.ChemicalComposition("#TMT6plex:0")
-        self.assertAlmostEqual(cc._mass(cc=cc), 229.162932, 6)
+    def test_mass_with_heavy_isotopes_TMT6Plex_example(self):
+        cc = chemical_composition.ChemicalComposition(modifications="TMT6plex:0")
+        self.assertAlmostEqual(cc.mass(cc=cc), 229.162932, 6)
 
     def fail_test(self):
         cc = chemical_composition.ChemicalComposition()
         failing_sequence_list = ["#Oxidation_w/o_pos", "#Oxidation_with_pos:1"]
         for failing_sequence in failing_sequence_list:
-            with self.assertRaises(SystemExit) as system_exit_check:
-                cc._parse_sequence_unimod_style(failing_sequence)
-
-            assert len(system_exit_check.exception.code) != 0
+            with self.assertRaises(Exception) as system_fail_check:
+                cc.add_modifications(failing_sequence)
+            print(system_fail_check.exception.args[:])
+            assert len(system_fail_check.exception.args[:]) != 0
         cc.clear()
-        cc._parse_sequence_unimod_style("#;")
+        cc.add_modifications(";")
         assert len(cc.keys()) == 0
 
         return
 
     def generate_cc_test(self):
-        cc = chemical_composition.ChemicalComposition("H2O")
+        cc = chemical_composition.ChemicalComposition(formula="+H2O")
         cc_returned = cc.generate_cc_dict()
         assert len(cc_returned.keys()) == 2
         return
@@ -68,26 +68,29 @@ class TestChemicalComposition(unittest.TestCase):
 TESTS = [
     {
         "input": "A#Oxidation:1",
+        "keyword": "deprecated_format",
         "output": "C(3)H(7)N(1)O(3)",
         "mod_pos_info": [{"pos": 1, "cc_mods": {"O": 1}}],
     },
     {
         "input": "A#Oxidation:1;Acetyl:0",
+        "keyword": "deprecated_format",
         # zero should end up at pos 1 ...
         "output": "C(5)H(9)N(1)O(4)",
         "mod_pos_info": [{"pos": 1, "cc_mods": {"O": 2, "C": 2, "H": 2}}],
     },
     {
         "input": "X",
+        "keyword": "deprecated_format",
         "aa_compositions": {"X": "C12"},
         "output": "C(12)H(2)O(1)",
         "mod_pos_info": [{"pos": 1, "cc_mods": None}],
     },
-    {
-        "input": "RAA",
-        # 'aa_compositions' :  {'X': 'C12', 'R0': 'C12'},
-        "output": "C(12)H(24)N(6)O(4)",
-    },
+    # {
+    #     "input": "RAA",
+    #     # 'aa_compositions' :  {'X': 'C12', 'R0': 'C12'},
+    #     "output": "C(12)H(24)N(6)O(4)",
+    # },
     # {
     #     "input": "R0X",
     #     "aa_compositions": {"X": "C12", "R0": "C12"},
@@ -96,6 +99,7 @@ TESTS = [
     # },
     {
         "input": "R#Label:13C(6)15N(2):1",
+        "keyword": "deprecated_format",
         "output": "H(14)13C(6)15N(2)N(2)O(2)",
     },
     # {
@@ -109,6 +113,7 @@ TESTS = [
     # },
     {
         "input": "RR#Label:13C(6)15N(2):1",
+        "keyword": "deprecated_format",
         "output": "C(6)H(26)13C(6)15N(2)N(6)O(3)",
         "aa_pos_info": [
             {"pos": 1, "cc_mods": {"C": 6, "O": 1, "N": 4, "H": 12}},
@@ -117,7 +122,8 @@ TESTS = [
         "mod_pos_info": [{"pos": 1, "cc_mods": {"C": -6, "13C": 6, "N": -2, "15N": 2}}],
     },
     {
-        "input": "H2O2H2",
+        "input": "+H2O2H2",
+        "keyword": "deprecated_format",
         "output": "H(4)O(2)",
     },
     # {"input": "H2O2H2-HO", "output": "H(3)O(1)"},
@@ -140,9 +146,13 @@ def check_unimod_pep_input(test_dict):
         test_dict[
             "aa_compositions"
         ] = chemical_composition.chemical_composition_kb.aa_compositions
-    cc = chemical_composition.ChemicalComposition(
-        test_dict["input"], aa_compositions=test_dict["aa_compositions"]
-    )
+    if test_dict["keyword"] == "deprecated_format":
+        cc = chemical_composition.ChemicalComposition(
+            deprecated_format=test_dict["input"],
+            aa_compositions=test_dict["aa_compositions"],
+        )
+    else:
+        pass
     print("hill:", cc.hill_notation_unimod())
     print(cc.composition_of_aa_at_pos)
     print(cc.composition_of_mod_at_pos)
