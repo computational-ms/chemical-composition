@@ -13,6 +13,6 @@ Contributors
 
 * J. Leufken
 * S. Schulze
-* M. Koesters
+* M. Kösters
 * C. Fufezan
 
