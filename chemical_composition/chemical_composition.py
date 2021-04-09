@@ -10,7 +10,7 @@ import re
 from collections import defaultdict as ddict
 import copy
 
-from unimod_mapper import UnimodMapper
+import unimod_mapper
 from chemical_composition import chemical_composition_kb
 
 
