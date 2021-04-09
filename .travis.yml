@@ -1,0 +1,21 @@
+language: python
+python:
+- '3.6'
+- '3.7'
+- '3.8'
+sudo: false
+install:
+- python setup.py install
+- pip install -r requirements.txt
+script: pytest
+deploy:
+  provider: pypi
+  user: pyratez
+  distributions: sdist bdist_wheel bdist_egg
+  on:
+    tags: true
+    all_branches: true
+    skip_existing: true
+    skip_cleanup: true
+  password:
+    secure: qN7VGVigQRr5omzGeUrzZN1rFiJ2FeAt5AWt/lhzaGGkCZzz58R3cstyDFXHwKZeHDM17gYTpL5hetAuXbYXvf68+vQDYvVvGt8KpSPpx4RMtTDlx8bk6QU+OXclJuENPuMq6OgbZ6+Ko5Qc6a+met/6KZVJqOBJ7p9wy6yaLQonRpIQUc1WUFGxW3XGCi5TKItFYQHi5/kcPnBOw1jexMrNCbYTCcvkENXRx5dnHTYe4TV6WXgw81Xwc8z444xfCLbCMvSD1Qi9PWlmrQOkaiNLK9ErCpEt3K90KilNFIAQvOmXg4/SxXmyKN/EH1K79hEUtVLVoUWYmiBD7NmrEYs2oI43xCEerCDxkflVYluSaSI35WXSVcBPjpq0WYLurXBKbitjv76rV1Umw5k/RTpalbjeuKzwcvOHJMkRHPcvOBylO7OQp+5LkqUPGXDqyagmnUyR5b9j80/JMim+mANIJC5gpGt8FdHy7lpTkCZFVPDROZUADqkLomHG2wDrjwx7lfjgzqMHgS0omDBlD3Kx55boY2bgIBolGMtnvy/bptG4tQf+m61Rr7EvNf+hy/qwmFwqU7+BXRar9yGAMp3El3LCEsNB3ALOKd4YlCC2W6wMahgzRxXX/wKdXyMYSGGnx7N1sZktIrEHjbgwmQFHCD7ug8cIV2lUiQxAf5E=
