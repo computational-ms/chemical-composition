@@ -14,7 +14,7 @@ http://www.ciaaw.org/pubs/TICE2009.pdf
 
 # updated 03-2021
 PROTON = 1.007276466621
-
+DIFFERENCE_14N_15N = 0.997035
 
 isotopic_distributions = {
     # Isotopic masses verified using
