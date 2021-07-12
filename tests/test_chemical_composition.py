@@ -1,9 +1,10 @@
 #!/usr/bin/env python3.2
 # encoding: utf-8
 import chemical_composition
+from pathlib import Path
 from chemical_composition import chemical_composition_kb
 
-TESTS = [
+PEPTIDE_TESTS = [
     {
         "input": "A#Oxidation:1",
         "output": "C(3)H(7)N(1)O(3)",
@@ -17,6 +18,12 @@ TESTS = [
     },
     {
         "input": "X",
+        "aa_compositions": {"X": "C12"},
+        "output": "C(12)H(2)O(1)",
+        "mod_pos_info": [{"pos": 1, "cc_mods": None}],
+    },
+    {
+        "input": "X#",
         "aa_compositions": {"X": "C12"},
         "output": "C(12)H(2)O(1)",
         "mod_pos_info": [{"pos": 1, "cc_mods": None}],
@@ -51,40 +58,89 @@ TESTS = [
         ],
         "mod_pos_info": [{"pos": 1, "cc_mods": {"C": -6, "13C": 6, "N": -2, "15N": 2}}],
     },
-    {
-        "input": "+H2O2H2",
-        "output": "H(4)O(2)",
-    },
-    {
-        "input": "+H2O2H2-HO",
-        "output": "H(3)O(1)",
-    },
 ]
 
+FORMULA_TESTS = [
+    {"input": "+H2O2H2", "output": "H(4)O(2)"},
+    {"input": "+H2O2H2-HO", "output": "H(3)O(1)"},
+]
 
 SUBTRACTION_TEST_SET = [
     # functionality tested yet ...
+    {"in": "+H2O2H2", "sub": "H2", "out": {"H": 2, "O": 2}}
+]
+
+UNIMOD_FILE_TEST = [
     {
-        "in": "+H2O2H2",
-        "sub": "H2",
-        "out": {"H": 2, "O": 2},
+        "input": "K#SILAC TMT:1",
+        "output": "C(8)H(34)13C(10)15N(1)N(3)O(4)",
+        "mod_pos_info": [
+            {
+                "pos": 1,
+                "cc_mods": {"13C": 10, "15N": 1, "C": 2, "H": 20, "N": 1, "O": 2},
+            }
+        ],
+        "usermod": Path(__file__).parent.joinpath("usermod.xml"),
     }
 ]
 
 
+def pepitde_with_usermod_test():
+    for test_id, test_dict in enumerate(UNIMOD_FILE_TEST):
+        if "aa_compositions" not in test_dict.keys():
+            test_dict[
+                "aa_compositions"
+            ] = chemical_composition.chemical_composition_kb.aa_compositions
+
+        cc = chemical_composition.ChemicalComposition(
+            sequence=test_dict["input"],
+            aa_compositions=test_dict["aa_compositions"],
+            unimod_file_list=[test_dict["usermod"]],
+        )
+        yield check_results, cc, test_dict
+
+
 def pepitde_with_unimod_test():
-    for test_id, test_dict in enumerate(TESTS):
-        yield check_unimod_pep_input, test_dict
+    for test_id, test_dict in enumerate(PEPTIDE_TESTS):
+        if "aa_compositions" not in test_dict.keys():
+            test_dict[
+                "aa_compositions"
+            ] = chemical_composition.chemical_composition_kb.aa_compositions
+
+        cc = chemical_composition.ChemicalComposition(
+            sequence=test_dict["input"], aa_compositions=test_dict["aa_compositions"]
+        )
+        yield check_results, cc, test_dict
 
 
-def check_unimod_pep_input(test_dict):
-    if "aa_compositions" not in test_dict.keys():
-        test_dict[
-            "aa_compositions"
-        ] = chemical_composition.chemical_composition_kb.aa_compositions
-    cc = chemical_composition.ChemicalComposition(
-        test_dict["input"], aa_compositions=test_dict["aa_compositions"]
-    )
+def formula_with_unimod_test():
+    for test_id, test_dict in enumerate(FORMULA_TESTS):
+        if "aa_compositions" not in test_dict.keys():
+            test_dict[
+                "aa_compositions"
+            ] = chemical_composition.chemical_composition_kb.aa_compositions
+
+        cc = chemical_composition.ChemicalComposition(
+            formula=test_dict["input"], aa_compositions=test_dict["aa_compositions"]
+        )
+        yield check_results, cc, test_dict
+
+
+def old_format_with_unimod_test():
+    for test_id, test_dict in enumerate(PEPTIDE_TESTS + FORMULA_TESTS):
+        if "aa_compositions" not in test_dict.keys():
+            test_dict[
+                "aa_compositions"
+            ] = chemical_composition.chemical_composition_kb.aa_compositions
+
+        cc = chemical_composition.ChemicalComposition(
+            deprecated_format=test_dict["input"],
+            aa_compositions=test_dict["aa_compositions"],
+        )
+        yield check_results, cc, test_dict
+
+
+def check_results(cc, test_dict):
     print("hill:", cc.hill_notation_unimod())
     print(cc.composition_of_aa_at_pos)
     print(cc.composition_of_mod_at_pos)
