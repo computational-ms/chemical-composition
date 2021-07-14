@@ -636,7 +636,7 @@ class ChemicalComposition(dict):
             )
         else:
             pattern = re.compile(r"(?P<element>[A-Z][a-z]*)(?P<count>[0-9]*)")
-        for match in pattern.finditer(chemical_formula):
+        for match in pattern.finditer(str(chemical_formula)):
             if match.group("count") == "":
                 count = 1
             else:
