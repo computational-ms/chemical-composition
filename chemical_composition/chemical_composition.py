@@ -112,12 +112,18 @@ class ChemicalComposition(dict):
         else:
             self.monosaccharide_compositions = monosaccharide_compositions
         self.isotope_mass_lookup = {}
-        for element, isotope_list in self.isotopic_distributions.items():
-            for isotope_mass, abundance in isotope_list:
-                isotope_mass_key = "{0}{1}".format(
-                    str(round(isotope_mass)).split(".")[0], element
-                )
-                self.isotope_mass_lookup[isotope_mass_key] = isotope_mass
+        for element, isotope_data in self.isotopic_distributions.items():
+            if isinstance(isotope_data, dict):
+                # this has extra data
+                isotope_list = []
+                for fraction in isotope_data:
+                    isotope_list.extend(isotope_data[fraction])
+            else:
+                isotope_list = isotope_data
+
+            for iso_abund in isotope_list:
+                isotope_mass_key =  f"{round(iso_abund[0])}{element}"
+                self.isotope_mass_lookup[isotope_mass_key] = iso_abund[0]
 
         self.peptide = None
         self.modifications = None
@@ -155,6 +161,9 @@ class ChemicalComposition(dict):
         if key not in self.keys():
             self[key] = 0
         return self[key]
+
+    def __repr__(self):
+        return self.hill_notation()
 
     def clear(self):
         """Resets all lookup dictionaries and self
