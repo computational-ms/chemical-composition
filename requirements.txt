@@ -1,2 +1,2 @@
 nose
-unimod-mapper
+unimod-mapper==0.4.2dev1

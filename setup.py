@@ -27,7 +27,7 @@ setup(
             "version.txt",
         ]
     },
-    python_requires=">=3.7.0",
+    python_requires=">=3.6.0",
     build_requires=[],
     install_requires=requirements,
     long_description="Chemical Composition",
