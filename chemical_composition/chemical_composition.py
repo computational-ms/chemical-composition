@@ -62,9 +62,12 @@ class ChemicalComposition(dict):
         aa_compositions=None,
         isotopic_distributions=None,
         monosaccharide_compositions=None,
+        unimod_file_list=None
     ):
 
         self._unimod_parser = None
+        self.unimod_files = unimod_file_list
+
         self.composition_of_mod_at_pos = {}
         """dict: chemical composition of unimod modifications at given position
         (if peptide sequence was used as input or using the `use` function)
@@ -109,17 +112,30 @@ class ChemicalComposition(dict):
         else:
             self.monosaccharide_compositions = monosaccharide_compositions
         self.isotope_mass_lookup = {}
-        for element, isotope_list in self.isotopic_distributions.items():
-            for isotope_mass, abundance in isotope_list:
-                isotope_mass_key = "{0}{1}".format(
-                    str(round(isotope_mass)).split(".")[0], element
-                )
-                self.isotope_mass_lookup[isotope_mass_key] = isotope_mass
+        for element, isotope_data in self.isotopic_distributions.items():
+            if isinstance(isotope_data, dict):
+                # this has extra data
+                isotope_list = []
+                for fraction in isotope_data:
+                    isotope_list.extend(isotope_data[fraction])
+            else:
+                isotope_list = isotope_data
+
+            for iso_abund in isotope_list:
+                isotope_mass_key =  f"{round(iso_abund[0])}{element}"
+                self.isotope_mass_lookup[isotope_mass_key] = iso_abund[0]
 
         self.peptide = None
         self.modifications = None
         self.glycan = None
         self.addon = None
+        if sequence is not None and "#" in sequence:
+            # this is unimod format so split
+            try:
+                sequence, modifications = sequence.split("#")
+            except ValueError:
+                raise ValueError(f"Invalid Sequence too many # ({sequence})")
+
         self.use(
             sequence=sequence,
             formula=formula,
@@ -145,6 +161,9 @@ class ChemicalComposition(dict):
         if key not in self.keys():
             self[key] = 0
         return self[key]
+
+    def __repr__(self):
+        return self.hill_notation()
 
     def clear(self):
         """Resets all lookup dictionaries and self
@@ -243,7 +262,7 @@ class ChemicalComposition(dict):
         if "#" in input_str:
             # Unimod Style format
             if self._unimod_parser is None:
-                self._unimod_parser = unimod_mapper.UnimodMapper()
+                self._unimod_parser = unimod_mapper.UnimodMapper(xml_file_list=self.unimod_files)
             self._parse_sequence_unimod_style(input_str)
         else:
             self._parse_sequence_piqdb_style(input_str)
@@ -424,18 +443,24 @@ class ChemicalComposition(dict):
         """
         if self.peptide is None:
             self.peptide = ""
-        for pos, aa in enumerate(aa_sequence):
-            aa_pos = len(self.peptide) + pos + 1
+        # for pos, aa in enumerate(aa_sequence):
+        #     aa_pos = len(self.peptide) + pos + 1
+        #     try:
+        #         aa_compo = self.aa_compositions[aa]
+        pattern = re.compile(r"(?P<amino>(?P<aa>[A-Z]{1})(?P<N>[0-9]*))")
+        pos = 0
+        for aa_match in pattern.finditer(aa_sequence):
+            pos += 1
             try:
-                aa_compo = self.aa_compositions[aa]
-            except:
+                aa_compo = self.aa_compositions[aa_match.group("amino")]
+            except KeyError:
                 raise Exception(
                     """
                     Error in chemical_composition.py:
                     Do not know aa composition for {0}
                     in {1}
                     """.format(
-                        aa, aa_sequence
+                        aa_match.group("amino"), aa_sequence
                     )
                 )
             self.add_chemical_formula(aa_compo)
@@ -527,7 +552,7 @@ class ChemicalComposition(dict):
                 separated by semicolons, i.e: "unimod1:pos;unimod2:pos"
         """
         if self._unimod_parser is None:
-            self._unimod_parser = unimod_mapper.UnimodMapper()
+            self._unimod_parser = unimod_mapper.UnimodMapper(xml_file_list=self.unimod_files)
         modification_list = []
         if self.modifications is not None:
             modification_list = self.modifications.split(";")
@@ -611,7 +636,7 @@ class ChemicalComposition(dict):
             )
         else:
             pattern = re.compile(r"(?P<element>[A-Z][a-z]*)(?P<count>[0-9]*)")
-        for match in pattern.finditer(chemical_formula):
+        for match in pattern.finditer(str(chemical_formula)):
             if match.group("count") == "":
                 count = 1
             else:
