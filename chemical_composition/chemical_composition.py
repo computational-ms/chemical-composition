@@ -62,11 +62,13 @@ class ChemicalComposition(dict):
         aa_compositions=None,
         isotopic_distributions=None,
         monosaccharide_compositions=None,
-        unimod_file_list=None
+        unimod_file_list=None,
+        add_default_files=True,
     ):
 
         self._unimod_parser = None
         self.unimod_files = unimod_file_list
+        self.add_default_files = add_default_files
 
         self.composition_of_mod_at_pos = {}
         """dict: chemical composition of unimod modifications at given position
@@ -122,7 +124,7 @@ class ChemicalComposition(dict):
                 isotope_list = isotope_data
 
             for iso_abund in isotope_list:
-                isotope_mass_key =  f"{round(iso_abund[0])}{element}"
+                isotope_mass_key = f"{round(iso_abund[0])}{element}"
                 self.isotope_mass_lookup[isotope_mass_key] = iso_abund[0]
 
         self.peptide = None
@@ -262,7 +264,9 @@ class ChemicalComposition(dict):
         if "#" in input_str:
             # Unimod Style format
             if self._unimod_parser is None:
-                self._unimod_parser = unimod_mapper.UnimodMapper(xml_file_list=self.unimod_files)
+                self._unimod_parser = unimod_mapper.UnimodMapper(
+                    xml_file_list=self.unimod_files, add_default_files=self.add_default_files
+                )
             self._parse_sequence_unimod_style(input_str)
         else:
             self._parse_sequence_piqdb_style(input_str)
@@ -404,10 +408,9 @@ class ChemicalComposition(dict):
         if start_formula != "":
             formula = "+{0}{1}".format(start_formula, other_formulas)
 
-        chemical_formula_blocks = re.compile(
-            r"""[+|-]{1}[^-+]*""",
-            re.VERBOSE,
-        ).findall(formula)
+        chemical_formula_blocks = re.compile(r"""[+|-]{1}[^-+]*""", re.VERBOSE).findall(
+            formula
+        )
         for cb in chemical_formula_blocks:
             if cb[0] == "+":
                 self.add_chemical_formula(cb[1:])
@@ -552,7 +555,9 @@ class ChemicalComposition(dict):
                 separated by semicolons, i.e: "unimod1:pos;unimod2:pos"
         """
         if self._unimod_parser is None:
-            self._unimod_parser = unimod_mapper.UnimodMapper(xml_file_list=self.unimod_files)
+            self._unimod_parser = unimod_mapper.UnimodMapper(
+                xml_file_list=self.unimod_files, add_default_files=self.add_default_files
+            )
         modification_list = []
         if self.modifications is not None:
             modification_list = self.modifications.split(";")
