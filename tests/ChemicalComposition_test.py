@@ -4,7 +4,6 @@ import chemical_composition
 import unittest
 
 
-
 class TestChemicalComposition(unittest.TestCase):
     def setUp(self):
         self.lib = chemical_composition.ChemicalComposition()
@@ -29,8 +28,8 @@ class TestChemicalComposition(unittest.TestCase):
         two_waters = water1 + water2
         self.assertEqual(two_waters.hill_notation(), "H4O2")
 
-    # def test_representation_is_hill_notatation(self):
-    #     self.assertEqual(str(self.water1), "H2O")
+    def test_representation_is_hill_notatation(self):
+        self.assertEqual(str(self.water1), "H2O")
 
     def test_clear_removes_everything(self):
         cc = chemical_composition.ChemicalComposition(sequence="KLEINERTEST")
@@ -53,6 +52,7 @@ class TestChemicalComposition(unittest.TestCase):
                 cc.add_modifications(failing_sequence)
             print(system_fail_check.exception.args[:])
             assert len(system_fail_check.exception.args[:]) != 0
+
         cc.clear()
         cc.add_modifications(";")
         assert len(cc.keys()) == 0
@@ -87,31 +87,11 @@ TESTS = [
         "output": "C(12)H(2)O(1)",
         "mod_pos_info": [{"pos": 1, "cc_mods": None}],
     },
-    # {
-    #     "input": "RAA",
-    #     # 'aa_compositions' :  {'X': 'C12', 'R0': 'C12'},
-    #     "output": "C(12)H(24)N(6)O(4)",
-    # },
-    # {
-    #     "input": "R0X",
-    #     "aa_compositions": {"X": "C12", "R0": "C12"},
-    #     "output": "C(24)H(2)O(1)",
-    #     # 'mod_pos_info' : (0, [{'C': 12 }], 1, {'O' : 1, 'C' : 2, 'H' : 2}])
-    # },
     {
         "input": "R#Label:13C(6)15N(2):1",
         "keyword": "deprecated_format",
         "output": "H(14)13C(6)15N(2)N(2)O(2)",
     },
-    # {
-    #     "input": "R0XR1",
-    #     "aa_compositions": {"R0": "C12", "X": "C13", "R1": "C14"},
-    #     "output": "C(39)H(2)O(1)",
-    #     "aa_pos_info": [
-    #         {"pos": 1, "cc_mods": {"C": 12}},
-    #         {"pos": 3, "cc_mods": {"C": 14}},
-    #     ],
-    # },
     {
         "input": "RR#Label:13C(6)15N(2):1",
         "keyword": "deprecated_format",
@@ -127,7 +107,6 @@ TESTS = [
         "keyword": "deprecated_format",
         "output": "H(4)O(2)",
     },
-    # {"input": "H2O2H2-HO", "output": "H(3)O(1)"},
 ]
 
 
