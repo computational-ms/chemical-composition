@@ -62,7 +62,7 @@ class ChemicalComposition(dict):
         aa_compositions=None,
         isotopic_distributions=None,
         monosaccharide_compositions=None,
-        unimod_file_list=None
+        unimod_file_list=None,
     ):
 
         self._unimod_parser = None
@@ -122,7 +122,7 @@ class ChemicalComposition(dict):
                 isotope_list = isotope_data
 
             for iso_abund in isotope_list:
-                isotope_mass_key =  f"{round(iso_abund[0])}{element}"
+                isotope_mass_key = f"{round(iso_abund[0])}{element}"
                 self.isotope_mass_lookup[isotope_mass_key] = iso_abund[0]
 
         self.peptide = None
@@ -262,7 +262,9 @@ class ChemicalComposition(dict):
         if "#" in input_str:
             # Unimod Style format
             if self._unimod_parser is None:
-                self._unimod_parser = unimod_mapper.UnimodMapper(xml_file_list=self.unimod_files)
+                self._unimod_parser = unimod_mapper.UnimodMapper(
+                    xml_file_list=self.unimod_files
+                )
             self._parse_sequence_unimod_style(input_str)
         else:
             self._parse_sequence_piqdb_style(input_str)
@@ -552,7 +554,9 @@ class ChemicalComposition(dict):
                 separated by semicolons, i.e: "unimod1:pos;unimod2:pos"
         """
         if self._unimod_parser is None:
-            self._unimod_parser = unimod_mapper.UnimodMapper(xml_file_list=self.unimod_files)
+            self._unimod_parser = unimod_mapper.UnimodMapper(
+                xml_file_list=self.unimod_files
+            )
         modification_list = []
         if self.modifications is not None:
             modification_list = self.modifications.split(";")
@@ -575,7 +579,7 @@ class ChemicalComposition(dict):
                 )
 
             for occ, match in enumerate(pattern.finditer(unimod)):
-                unimodcomposition = self._unimod_parser.name2composition(
+                unimodcomposition = self._unimod_parser.name2first_composition(
                     unimod[: match.start()]
                 )
                 if unimodcomposition is None:
