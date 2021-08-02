@@ -307,7 +307,7 @@ class ChemicalComposition(dict):
                 )
 
             for occ, match in enumerate(pattern.finditer(unimod)):
-                unimodcomposition = self._unimod_parser.name2composition(
+                unimodcomposition = self._unimod_parser.name2first_composition(
                     unimod[: match.start()]
                 )
                 if unimodcomposition is None:
