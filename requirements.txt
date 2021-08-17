@@ -1,2 +1,2 @@
 nose
-unimod-mapper>=0.4.5
+unimod-mapper>=0.5.0
