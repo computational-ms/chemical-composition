@@ -63,10 +63,12 @@ class ChemicalComposition(dict):
         isotopic_distributions=None,
         monosaccharide_compositions=None,
         unimod_file_list=None,
+        add_default_files=True,
     ):
 
         self._unimod_parser = None
         self.unimod_files = unimod_file_list
+        self.add_default_files = add_default_files
 
         self.composition_of_mod_at_pos = {}
         """dict: chemical composition of unimod modifications at given position
@@ -263,7 +265,7 @@ class ChemicalComposition(dict):
             # Unimod Style format
             if self._unimod_parser is None:
                 self._unimod_parser = unimod_mapper.UnimodMapper(
-                    xml_file_list=self.unimod_files
+                    xml_file_list=self.unimod_files, add_default_files=self.add_default_files
                 )
             self._parse_sequence_unimod_style(input_str)
         else:
@@ -406,10 +408,9 @@ class ChemicalComposition(dict):
         if start_formula != "":
             formula = "+{0}{1}".format(start_formula, other_formulas)
 
-        chemical_formula_blocks = re.compile(
-            r"""[+|-]{1}[^-+]*""",
-            re.VERBOSE,
-        ).findall(formula)
+        chemical_formula_blocks = re.compile(r"""[+|-]{1}[^-+]*""", re.VERBOSE).findall(
+            formula
+        )
         for cb in chemical_formula_blocks:
             if cb[0] == "+":
                 self.add_chemical_formula(cb[1:])
@@ -555,7 +556,7 @@ class ChemicalComposition(dict):
         """
         if self._unimod_parser is None:
             self._unimod_parser = unimod_mapper.UnimodMapper(
-                xml_file_list=self.unimod_files
+                xml_file_list=self.unimod_files, add_default_files=self.add_default_files
             )
         modification_list = []
         if self.modifications is not None:
