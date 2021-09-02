@@ -164,9 +164,6 @@ class ChemicalComposition(dict):
             self[key] = 0
         return self[key]
 
-    def __repr__(self):
-        return self.hill_notation()
-
     def clear(self):
         """Resets all lookup dictionaries and self
 
@@ -265,7 +262,8 @@ class ChemicalComposition(dict):
             # Unimod Style format
             if self._unimod_parser is None:
                 self._unimod_parser = unimod_mapper.UnimodMapper(
-                    xml_file_list=self.unimod_files, add_default_files=self.add_default_files
+                    xml_file_list=self.unimod_files,
+                    add_default_files=self.add_default_files,
                 )
             self._parse_sequence_unimod_style(input_str)
         else:
