@@ -265,7 +265,8 @@ class ChemicalComposition(dict):
             # Unimod Style format
             if self._unimod_parser is None:
                 self._unimod_parser = unimod_mapper.UnimodMapper(
-                    xml_file_list=self.unimod_files, add_default_files=self.add_default_files
+                    xml_file_list=self.unimod_files,
+                    add_default_files=self.add_default_files,
                 )
             self._parse_sequence_unimod_style(input_str)
         else:
@@ -398,24 +399,33 @@ class ChemicalComposition(dict):
                 Plus (+) and minus (-) are itnerpreted to add and subtract, respectively, the formula.
                 If the string does not start with +/-, the default is to add the formula.
         """
-        positions = [len(formula)]
-        for sign in ["+", "-"]:
-            if sign in formula:
-                positions.append(formula.index(sign))
-        minPos = min(positions)
-        start_formula = formula[:minPos]
-        other_formulas = formula[minPos:]
-        if start_formula != "":
-            formula = "+{0}{1}".format(start_formula, other_formulas)
+        if "(" in formula:
+            chemical_formula_blocks = re.compile(
+                r"(?P<sign>[+-]?)(?P<formula>[0-9]*[A-Z][a-z]*\(-?\d*\))", re.VERBOSE
+            ).findall(formula)
+        else:
+            positions = [len(formula)]
+            for sign in ["+", "-"]:
+                if sign in formula:
+                    positions.append(formula.index(sign))
+            minPos = min(positions)
+            start_formula = formula[:minPos]
+            other_formulas = formula[minPos:]
+            if start_formula != "":
+                formula = "+{0}{1}".format(start_formula, other_formulas)
+            chemical_formula_blocks = re.compile(
+                r"(?P<sign>[+-]{1})(?P<formula>[^-+]*)", re.VERBOSE
+            ).findall(formula)
 
-        chemical_formula_blocks = re.compile(r"""[+|-]{1}[^-+]*""", re.VERBOSE).findall(
-            formula
-        )
         for cb in chemical_formula_blocks:
-            if cb[0] == "+":
-                self.add_chemical_formula(cb[1:])
+            if cb[0] == "+" or cb[0] == "":
+                self.add_chemical_formula(cb[1])
+            elif cb[0] == "-":
+                self.subtract_chemical_formula(cb[1])
             else:
-                self.subtract_chemical_formula(cb[1:])
+                raise Exception(
+                    "Please specify + or - for the given formula: {0}".format(cb)
+                )
         return
 
     def add_chemical_formula(self, chemical_formula, factor=1):
@@ -637,7 +647,7 @@ class ChemicalComposition(dict):
         chem_dict = {}
         if unimod_style:
             pattern = re.compile(
-                r"(?P<isotope>[0-9]*)(?P<element>[A-Z][a-z]*)\((?P<count>[0-9]*)\)"
+                r"(?P<isotope>[0-9]*)(?P<element>[A-Z][a-z]*)\((?P<count>-?\d*)\)"
             )
         else:
             pattern = re.compile(r"(?P<element>[A-Z][a-z]*)(?P<count>[0-9]*)")
