@@ -96,7 +96,7 @@ def pepitde_with_usermod_test():
             sequence=test_dict["input"],
             aa_compositions=test_dict["aa_compositions"],
             unimod_file_list=[test_dict["usermod"]],
-            add_default_files=False
+            add_default_files=False,
         )
         yield check_results, cc, test_dict
 
