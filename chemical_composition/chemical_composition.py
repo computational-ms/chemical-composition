@@ -164,9 +164,6 @@ class ChemicalComposition(dict):
             self[key] = 0
         return self[key]
 
-    def __repr__(self):
-        return self.hill_notation()
-
     def clear(self):
         """Resets all lookup dictionaries and self
 

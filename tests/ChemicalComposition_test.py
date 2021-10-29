@@ -28,8 +28,8 @@ class TestChemicalComposition(unittest.TestCase):
         two_waters = water1 + water2
         self.assertEqual(two_waters.hill_notation(), "H4O2")
 
-    def test_representation_is_hill_notatation(self):
-        self.assertEqual(str(self.water1), "H2O")
+    def test_representation_is_dict(self):
+        self.assertEqual(self.water1, {"H": 2, "O": 1})
 
     def test_clear_removes_everything(self):
         cc = chemical_composition.ChemicalComposition(sequence="KLEINERTEST")
