@@ -307,10 +307,10 @@ class ChemicalComposition(dict):
                 )
 
             for occ, match in enumerate(pattern.finditer(unimod)):
-                unimodcomposition = self._unimod_parser.name2first_composition(
+                unimodcomposition = self._unimod_parser.name_to_composition(
                     unimod[: match.start()]
                 )
-                if unimodcomposition is None:
+                if len(unimodcomposition) == 0:
                     raise Exception(
                         """
                         Error in chemical_composition.py:
@@ -319,6 +319,7 @@ class ChemicalComposition(dict):
                             unimod[: match.start()]
                         )
                     )
+                unimodcomposition = unimodcomposition[0]
                 if occ >= 1:
                     raise Exception(
                         """
@@ -587,10 +588,10 @@ class ChemicalComposition(dict):
                 )
 
             for occ, match in enumerate(pattern.finditer(unimod)):
-                unimodcomposition = self._unimod_parser.name2first_composition(
+                unimodcomposition = self._unimod_parser.name_to_composition(
                     unimod[: match.start()]
                 )
-                if unimodcomposition is None:
+                if len(unimodcomposition) == 0:
                     raise Exception(
                         """
                         Error in chemical_composition.py:
@@ -599,6 +600,7 @@ class ChemicalComposition(dict):
                             unimod[: match.start()]
                         )
                     )
+                unimodcomposition = unimodcomposition[0]
                 if occ >= 1:
                     raise Exception(
                         """
