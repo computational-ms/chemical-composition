@@ -63,6 +63,8 @@ PEPTIDE_TESTS = [
 FORMULA_TESTS = [
     {"input": "+H2O2H2", "output": "H(4)O(2)"},
     {"input": "+H2O2H2-HO", "output": "H(3)O(1)"},
+    {"input": {"H": 4, "O": 2}, "output": "H(4)O(2)"},
+    {"input": {"H": 4, "O": -2}, "output": "H(4)O(-2)"},
 ]
 
 SUBTRACTION_TEST_SET = [

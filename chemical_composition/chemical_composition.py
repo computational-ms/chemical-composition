@@ -20,7 +20,8 @@ class ChemicalComposition(dict):
 
     Keyword Arguments:
         sequence (str): peptide sequence that should be used for the instance, e.g. "PEPTIDE"
-        formula (str): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O"
+        formula (str|dict): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O".
+            The formula can also be given as a dictionary defining the compsition, e.g. {H:2, "O":1}
         modifications (str): modifications of the peptide sequence, given as "Unimod:pos", e.g. "Oxidation:2"
         glycan (str): glycan composition that will be added to the instance, e.g. "HexNAc(2)Hex(5)"
         deprecated_format (str): old input format, using either "PEPTIDE+Formula-Formula" or "PEPTIDE#Unimod:pos"
@@ -199,7 +200,7 @@ class ChemicalComposition(dict):
 
         Args:
             sequence (str): peptide sequence that should be used for the instance, e.g. "PEPTIDE"
-            formula (str): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O"
+            formula (str|dict): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O", or {"H":2, "O":1}
             modifications (str): modifications of the peptide sequence, given as "Unimod:pos", e.g. "Oxidation:2"
             glycan (str): glycan composition that will be added to the instance, e.g. "HexNAc(2)Hex(5)"
             deprecated_format (str): old input format, using either "PEPTIDE+Formula-Formula" or "PEPTIDE#Unimod:pos"
@@ -393,11 +394,16 @@ class ChemicalComposition(dict):
         adds or subtracts it from the instance.
 
         Args:
-            formula (str): chemical formula in hill notation (or unimod hill notation).
-                Plus (+) and minus (-) are itnerpreted to add and subtract, respectively, the formula.
+            formula (str|dict): chemical formula in hill notation (or unimod hill notation).
+                Plus (+) and minus (-) are interpreted to add and subtract, respectively, the formula.
                 If the string does not start with +/-, the default is to add the formula.
+                If the formula is given as a dict, the keys should be integers and thereby define addition
+                or subtraction of the elements.
         """
-        if "(" in formula:
+        if type(formula) is dict:
+            self._merge(formula)
+            return
+        elif "(" in formula:
             chemical_formula_blocks = re.compile(
                 r"(?P<sign>[+-]?)(?P<formula>[0-9]*[A-Z][a-z]*\(-?\d*\))", re.VERBOSE
             ).findall(formula)
