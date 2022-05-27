@@ -20,7 +20,8 @@ class ChemicalComposition(dict):
 
     Keyword Arguments:
         sequence (str): peptide sequence that should be used for the instance, e.g. "PEPTIDE"
-        formula (str): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O"
+        formula (str|dict): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O".
+            The formula can also be given as a dictionary defining the compsition, e.g. {"H":2, "O":1}
         modifications (str): modifications of the peptide sequence, given as "Unimod:pos", e.g. "Oxidation:2"
         glycan (str): glycan composition that will be added to the instance, e.g. "HexNAc(2)Hex(5)"
         deprecated_format (str): old input format, using either "PEPTIDE+Formula-Formula" or "PEPTIDE#Unimod:pos"
@@ -164,9 +165,6 @@ class ChemicalComposition(dict):
             self[key] = 0
         return self[key]
 
-    def __repr__(self):
-        return self.hill_notation()
-
     def clear(self):
         """Resets all lookup dictionaries and self
 
@@ -202,7 +200,7 @@ class ChemicalComposition(dict):
 
         Args:
             sequence (str): peptide sequence that should be used for the instance, e.g. "PEPTIDE"
-            formula (str): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O"
+            formula (str|dict): chemical formula(s) that will be added/subtracted from the instance, e.g. "-H2O", or {"H":2, "O":1}
             modifications (str): modifications of the peptide sequence, given as "Unimod:pos", e.g. "Oxidation:2"
             glycan (str): glycan composition that will be added to the instance, e.g. "HexNAc(2)Hex(5)"
             deprecated_format (str): old input format, using either "PEPTIDE+Formula-Formula" or "PEPTIDE#Unimod:pos"
@@ -265,7 +263,8 @@ class ChemicalComposition(dict):
             # Unimod Style format
             if self._unimod_parser is None:
                 self._unimod_parser = unimod_mapper.UnimodMapper(
-                    xml_file_list=self.unimod_files, add_default_files=self.add_default_files
+                    xml_file_list=self.unimod_files,
+                    add_default_files=self.add_default_files,
                 )
             self._parse_sequence_unimod_style(input_str)
         else:
@@ -309,10 +308,10 @@ class ChemicalComposition(dict):
                 )
 
             for occ, match in enumerate(pattern.finditer(unimod)):
-                unimodcomposition = self._unimod_parser.name2first_composition(
+                unimodcomposition = self._unimod_parser.name_to_composition(
                     unimod[: match.start()]
                 )
-                if unimodcomposition is None:
+                if len(unimodcomposition) == 0:
                     raise Exception(
                         """
                         Error in chemical_composition.py:
@@ -321,6 +320,7 @@ class ChemicalComposition(dict):
                             unimod[: match.start()]
                         )
                     )
+                unimodcomposition = unimodcomposition[0]
                 if occ >= 1:
                     raise Exception(
                         """
@@ -394,28 +394,42 @@ class ChemicalComposition(dict):
         adds or subtracts it from the instance.
 
         Args:
-            formula (str): chemical formula in hill notation (or unimod hill notation).
-                Plus (+) and minus (-) are itnerpreted to add and subtract, respectively, the formula.
+            formula (str|dict): chemical formula in hill notation (or unimod hill notation).
+                Plus (+) and minus (-) are interpreted to add and subtract, respectively, the formula.
                 If the string does not start with +/-, the default is to add the formula.
+                If the formula is given as a dict, the values should be integers and thereby define
+                addition or subtraction of the elements.
         """
-        positions = [len(formula)]
-        for sign in ["+", "-"]:
-            if sign in formula:
-                positions.append(formula.index(sign))
-        minPos = min(positions)
-        start_formula = formula[:minPos]
-        other_formulas = formula[minPos:]
-        if start_formula != "":
-            formula = "+{0}{1}".format(start_formula, other_formulas)
+        if isinstance(formula, dict):
+            self._merge(formula)
+            return
+        elif "(" in formula:
+            chemical_formula_blocks = re.compile(
+                r"(?P<sign>[+-]?)(?P<formula>[0-9]*[A-Z][a-z]*\(-?\d*\))", re.VERBOSE
+            ).findall(formula)
+        else:
+            positions = [len(formula)]
+            for sign in ["+", "-"]:
+                if sign in formula:
+                    positions.append(formula.index(sign))
+            minPos = min(positions)
+            start_formula = formula[:minPos]
+            other_formulas = formula[minPos:]
+            if start_formula != "":
+                formula = "+{0}{1}".format(start_formula, other_formulas)
+            chemical_formula_blocks = re.compile(
+                r"(?P<sign>[+-]{1})(?P<formula>[^-+]*)", re.VERBOSE
+            ).findall(formula)
 
-        chemical_formula_blocks = re.compile(r"""[+|-]{1}[^-+]*""", re.VERBOSE).findall(
-            formula
-        )
         for cb in chemical_formula_blocks:
-            if cb[0] == "+":
-                self.add_chemical_formula(cb[1:])
+            if cb[0] == "+" or cb[0] == "":
+                self.add_chemical_formula(cb[1])
+            elif cb[0] == "-":
+                self.subtract_chemical_formula(cb[1])
             else:
-                self.subtract_chemical_formula(cb[1:])
+                raise Exception(
+                    "Please specify + or - for the given formula: {0}".format(cb)
+                )
         return
 
     def add_chemical_formula(self, chemical_formula, factor=1):
@@ -556,7 +570,8 @@ class ChemicalComposition(dict):
         """
         if self._unimod_parser is None:
             self._unimod_parser = unimod_mapper.UnimodMapper(
-                xml_file_list=self.unimod_files, add_default_files=self.add_default_files
+                xml_file_list=self.unimod_files,
+                add_default_files=self.add_default_files,
             )
         modification_list = []
         if self.modifications is not None:
@@ -580,10 +595,10 @@ class ChemicalComposition(dict):
                 )
 
             for occ, match in enumerate(pattern.finditer(unimod)):
-                unimodcomposition = self._unimod_parser.name2first_composition(
+                unimodcomposition = self._unimod_parser.name_to_composition(
                     unimod[: match.start()]
                 )
-                if unimodcomposition is None:
+                if len(unimodcomposition) == 0:
                     raise Exception(
                         """
                         Error in chemical_composition.py:
@@ -592,6 +607,7 @@ class ChemicalComposition(dict):
                             unimod[: match.start()]
                         )
                     )
+                unimodcomposition = unimodcomposition[0]
                 if occ >= 1:
                     raise Exception(
                         """
@@ -637,7 +653,7 @@ class ChemicalComposition(dict):
         chem_dict = {}
         if unimod_style:
             pattern = re.compile(
-                r"(?P<isotope>[0-9]*)(?P<element>[A-Z][a-z]*)\((?P<count>[0-9]*)\)"
+                r"(?P<isotope>[0-9]*)(?P<element>[A-Z][a-z]*)\((?P<count>-?\d*)\)"
             )
         else:
             pattern = re.compile(r"(?P<element>[A-Z][a-z]*)(?P<count>[0-9]*)")

@@ -28,8 +28,8 @@ class TestChemicalComposition(unittest.TestCase):
         two_waters = water1 + water2
         self.assertEqual(two_waters.hill_notation(), "H4O2")
 
-    def test_representation_is_hill_notatation(self):
-        self.assertEqual(str(self.water1), "H2O")
+    def test_representation_is_dict(self):
+        self.assertEqual(self.water1, {"H": 2, "O": 1})
 
     def test_clear_removes_everything(self):
         cc = chemical_composition.ChemicalComposition(sequence="KLEINERTEST")
@@ -42,7 +42,17 @@ class TestChemicalComposition(unittest.TestCase):
 
     def test_mass_with_heavy_isotopes_TMT6Plex_example(self):
         cc = chemical_composition.ChemicalComposition(modifications="TMT6plex:0")
-        self.assertAlmostEqual(cc.mass(cc=cc), 229.162932, 6)
+        self.assertAlmostEqual(cc.mass(), 229.162932, 6)
+
+    def test_formula_with_negative_atom_counts(self):
+        cc = chemical_composition.ChemicalComposition(formula="+N3-N2")
+        self.assertAlmostEqual(cc.mass(), 14.003074, 6)
+        cc = chemical_composition.ChemicalComposition(formula="15N(1)N(-1)")
+        self.assertAlmostEqual(cc.mass(), 0.997035, 6)
+        cc1 = chemical_composition.ChemicalComposition(formula="15N(1)-N(-1)")
+        self.assertAlmostEqual(cc1.mass(), 29.003183, 6)
+        cc2 = chemical_composition.ChemicalComposition(formula="15N(1)+N(1)")
+        self.assertEqual(cc1, cc2)
 
     def fail_test(self):
         cc = chemical_composition.ChemicalComposition()
